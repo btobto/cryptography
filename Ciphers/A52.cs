@@ -99,7 +99,7 @@ namespace Ciphers
 			return output;
 		}
 
-		public byte[] Crypt(byte[] data)
+		public byte[] CryptWithKeystream(byte[] data)
 		{
 			int dataLengthBits = data.Length * 8;
 			int numKeystreams = (int)Math.Ceiling((double)dataLengthBits / KeystreamLength);
@@ -119,7 +119,7 @@ namespace Ciphers
 			return outputBytes;
 		}
 
-		public byte[] Crypt2(byte[] data)
+		public byte[] Crypt(byte[] data)
 		{
 			BitArray outputBits = new BitArray(data);
 			for (int i = 0; i < data.Length * 8; i++)
