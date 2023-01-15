@@ -32,6 +32,9 @@ await RPC.DecryptA52(
 	keyA52, ivA52
 );
 
+await RPC.EncryptRailFence(client, "railfence_original.txt", "railfence_encrypted.txt", 3);
+await RPC.DecryptRailFence(client, "railfence_encrypted.txt", "railfence_decrypted.txt", 3);
+
 Console.WriteLine("Press any key to exit...");
 Console.ReadKey();
 

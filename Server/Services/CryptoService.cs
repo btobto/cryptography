@@ -21,22 +21,17 @@ namespace Crypto.Server.Services
 
 			BitArray keyBits = Helper.StringToBitArray(key);
 			BitArray ivBits = Helper.StringToBitArray(iv);
-
 			A52 a52 = new A52(keyBits, ivBits);
 
-			while (await requestStream.MoveNext())
+			await foreach (var request in requestStream.ReadAllAsync())
 			{
-				var request = requestStream.Current;
-
 				byte[] chunk = request.Chunk.Bytes.ToByteArray();
 				byte[] encryptedChunk = a52.Encrypt(chunk);
 
-				Chunk response = new Chunk()
+				await responseStream.WriteAsync(new Chunk()
 				{
 					Bytes = ByteString.CopyFrom(encryptedChunk, 0, request.Chunk.Size)
-				};
-
-				await responseStream.WriteAsync(response);
+				});
 			}
 		}
 
@@ -50,14 +45,30 @@ namespace Crypto.Server.Services
 			await CryptA52(requestStream, responseStream, context);
 		}
 
-		public override Task<RailFenceResponse> DecryptRailFence(RailFenceRequest request, ServerCallContext context)
+		public override async Task DecryptRailFence(IAsyncStreamReader<RailFenceRequest> requestStream, IServerStreamWriter<RailFenceResponse> responseStream, ServerCallContext context)
 		{
-			return base.DecryptRailFence(request, context);
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				string decryptedText = RailFence.Decrypt(request.Text, request.Rails);
+
+				await responseStream.WriteAsync(new RailFenceResponse()
+				{
+					Text = decryptedText
+				});
+			}
 		}
 
-		public override Task<RailFenceResponse> EncryptRailFence(RailFenceRequest request, ServerCallContext context)
+		public override async Task EncryptRailFence(IAsyncStreamReader<RailFenceRequest> requestStream, IServerStreamWriter<RailFenceResponse> responseStream, ServerCallContext context)
 		{
-			return base.EncryptRailFence(request, context);
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				string encryptedText = RailFence.Encrypt(request.Text, request.Rails);
+
+				await responseStream.WriteAsync(new RailFenceResponse()
+				{
+					Text = encryptedText
+				});
+			}
 		}
 	}
 }

@@ -20,5 +20,17 @@ namespace Client
 				}
 			}
 		}
+
+		public static async IAsyncEnumerable<string> ReadFileByLines(string filePath)
+		{
+			using (StreamReader reader = new StreamReader(filePath))
+			{
+				string line;
+				while ((line = await reader.ReadLineAsync()) != null)
+				{
+					yield return line;
+				}
+			}
+		}
 	}
 }

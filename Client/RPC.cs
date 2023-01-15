@@ -15,7 +15,10 @@ namespace Client
 	{
 		public const int ChunkSize = 1024 * 64;
 
-		public static async Task CryptA52(Crypto.Crypto.CryptoClient client, AsyncDuplexStreamingCall<A52Request, Chunk> call, string inFilePath, string outFilePath, string key, string iv)
+		public static async Task CryptA52(
+			AsyncDuplexStreamingCall<A52Request, Chunk> call, 
+			string inFilePath, string outFilePath, 
+			string key, string iv)
 		{
 			using FileStream outFileStream = new FileStream(outFilePath, FileMode.Create);
 
@@ -47,22 +50,45 @@ namespace Client
 
 		public static async Task EncryptA52(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
 		{
-			await CryptA52(client, client.EncryptA52(), inFilePath, outFilePath, key, iv);
+			await CryptA52(client.EncryptA52(), inFilePath, outFilePath, key, iv);
 		}
 
 		public static async Task DecryptA52(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
 		{
-			await CryptA52(client, client.DecryptA52(), inFilePath, outFilePath, key, iv);
+			await CryptA52(client.DecryptA52(), inFilePath, outFilePath, key, iv);
+		}
+
+		public static async Task CryptRailFence(
+			AsyncDuplexStreamingCall<RailFenceRequest, RailFenceResponse> call,
+			string inFilePath, string outFilePath, int rails)
+		{
+			using StreamWriter writer = new StreamWriter(outFilePath);
+
+			await foreach (string line in Helper.ReadFileByLines(inFilePath))
+			{
+				var request = new RailFenceRequest()
+				{
+					Text = line,
+					Rails = rails
+				};
+				await call.RequestStream.WriteAsync(request);
+
+				var response = call.ResponseStream;
+				await response.MoveNext();
+				writer.WriteLine(response.Current.Text);
+			}
+
+			await call.RequestStream.CompleteAsync();
 		}
 
 		public static async Task EncryptRailFence(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, int rails)
 		{
-
+			await CryptRailFence(client.EncryptRailFence(), inFilePath, outFilePath, rails);
 		}
 
-		public static async Task EcryptRailFence(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, int rails)
+		public static async Task DecryptRailFence(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, int rails)
 		{
-
+			await CryptRailFence(client.DecryptRailFence(), inFilePath, outFilePath, rails);
 		}
 	}
 }

@@ -6,8 +6,8 @@ service Crypto {
 	rpc EncryptA52(stream A52Request) returns (stream Chunk);
 	rpc DecryptA52(stream A52Request) returns (stream Chunk);
 
-	rpc EncryptRailFence(RailFenceRequest) returns (RailFenceResponse);
-	rpc DecryptRailFence(RailFenceRequest) returns (RailFenceResponse);
+	rpc EncryptRailFence(stream RailFenceRequest) returns (stream RailFenceResponse);
+	rpc DecryptRailFence(stream RailFenceRequest) returns (stream RailFenceResponse);
 }
 
 message Chunk {
