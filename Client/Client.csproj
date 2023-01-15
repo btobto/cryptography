@@ -9,10 +9,14 @@
 
   <ItemGroup>
     <None Remove="a52_original.bin" />
+    <None Remove="railfence_original.txt" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="a52_original.bin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="railfence_original.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -49,5 +49,15 @@ namespace Crypto.Server.Services
 		{
 			await CryptA52(requestStream, responseStream, context);
 		}
+
+		public override Task<RailFenceResponse> DecryptRailFence(RailFenceRequest request, ServerCallContext context)
+		{
+			return base.DecryptRailFence(request, context);
+		}
+
+		public override Task<RailFenceResponse> EncryptRailFence(RailFenceRequest request, ServerCallContext context)
+		{
+			return base.EncryptRailFence(request, context);
+		}
 	}
 }

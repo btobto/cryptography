@@ -54,5 +54,15 @@ namespace Client
 		{
 			await CryptA52(client, client.DecryptA52(), inFilePath, outFilePath, key, iv);
 		}
+
+		public static async Task EncryptRailFence(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, int rails)
+		{
+
+		}
+
+		public static async Task EcryptRailFence(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, int rails)
+		{
+
+		}
 	}
 }

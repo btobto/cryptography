@@ -5,6 +5,9 @@ package crypto;
 service Crypto {
 	rpc EncryptA52(stream A52Request) returns (stream Chunk);
 	rpc DecryptA52(stream A52Request) returns (stream Chunk);
+
+	rpc EncryptRailFence(RailFenceRequest) returns (RailFenceResponse);
+	rpc DecryptRailFence(RailFenceRequest) returns (RailFenceResponse);
 }
 
 message Chunk {
@@ -16,5 +19,14 @@ message A52Request {
 	Chunk chunk = 1;
 	string key = 2;
 	string iv = 3;
+}
+
+message RailFenceRequest {
+	string text = 1;
+	int32 rails = 2;
+}
+
+message RailFenceResponse {
+	string text = 1;
 }
 
