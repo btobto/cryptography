@@ -83,6 +83,42 @@ namespace Ciphers
 			return decryptedChunk.ToArray();
 		}
 
+		public byte[] EncryptBlock(byte[] data)
+		{
+			var v = ToUInt32Array(data);
+			var v0 = v[0];
+			var v1 = v[1];
+
+			uint sum = 0;
+
+			for (int i = 0; i < _numRounds; i++)
+			{
+				v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + _key[sum & 3]);
+				sum += _delta;
+				v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + _key[(sum >> 11) & 3]);
+			}
+
+			return ToByteArray(v0, v1);
+		}
+
+		public byte[] DecryptBlock(byte[] data)
+		{
+			var v = ToUInt32Array(data);
+			var v0 = v[0];
+			var v1 = v[1];
+
+			uint sum = _delta * (uint)_numRounds;
+
+			for (int i = 0; i < _numRounds; i++)
+			{
+				v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + _key[(sum >> 11) & 3]);
+				sum -= _delta;
+				v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + _key[sum & 3]);
+			}
+
+			return ToByteArray(v0, v1); ;
+		}
+
 		public static (uint, uint) ByteArrayToUInts(byte[] data)
 		{
 			if (data.Length != 8)
@@ -97,42 +133,30 @@ namespace Ciphers
 		{
 			byte[] output = new byte[8];
 
-			Array.Copy(BitConverter.GetBytes(v0), 0, output, 0, 4);
-			Array.Copy(BitConverter.GetBytes(v1), 0, output, 4, 4);
+			Buffer.BlockCopy(BitConverter.GetBytes(v0), 0, output, 0, 4);
+			Buffer.BlockCopy(BitConverter.GetBytes(v1), 0, output, 4, 4);
 
 			return output;
 		}
 
-		public byte[] EncryptBlock(byte[] data)
+		public static byte[] ToByteArray(params uint[] data)
 		{
-			var (v0, v1) = ByteArrayToUInts(data);
+			byte[] byteArray = new byte[data.Length * sizeof(uint)];
 
-			uint sum = 0;
+			Buffer.BlockCopy(data, 0, byteArray, 0, data.Length * sizeof(uint));
 
-			for (int i = 0; i < _numRounds; i++)
-			{
-				v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + _key[sum & 3]);
-				sum += _delta;
-				v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + _key[(sum >> 11) & 3]);
-			}
-
-			return UIntsToByteArray(v0, v1);
+			return byteArray;
 		}
 
-		public byte[] DecryptBlock(byte[] data)
+		public static uint[] ToUInt32Array(byte[] data)
 		{
-			var (v0, v1) = ByteArrayToUInts(data);
+			uint[] uintArray = new uint[(int)Math.Ceiling((double)data.Length / sizeof(uint))];
 
-			uint sum = 0xC6EF3720;
+			Buffer.BlockCopy(data, 0, uintArray, 0, data.Length);
 
-			for (int i = 0; i < _numRounds; i++)
-			{
-				v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + _key[(sum >> 1) & 3]);
-				sum -= _delta;
-				v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + _key[sum & 3]);
-			}
-
-			return UIntsToByteArray(v0, v1);
+			return uintArray;
 		}
+
+
 	}
 }

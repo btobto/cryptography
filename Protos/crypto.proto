@@ -15,7 +15,6 @@ service Crypto {
 
 message Chunk {
 	bytes bytes = 1;
-	int32 size = 2;
 }
 
 message A52Request {
@@ -34,7 +33,7 @@ message RailFenceResponse {
 }
 
 message XTEARequest {
-	bytes key = 1;
+	string key = 1;
 	Chunk chunk = 2;
 }
 

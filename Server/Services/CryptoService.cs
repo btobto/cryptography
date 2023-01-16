@@ -30,7 +30,7 @@ namespace Crypto.Server.Services
 
 				await responseStream.WriteAsync(new Chunk()
 				{
-					Bytes = ByteString.CopyFrom(encryptedChunk, 0, request.Chunk.Size)
+					Bytes = ByteString.CopyFrom(encryptedChunk)
 				});
 			}
 		}
@@ -75,42 +75,41 @@ namespace Crypto.Server.Services
 		{
 			await requestStream.MoveNext();
 
-			var key = requestStream.Current.Key.ToByteArray();
-
+			var key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
 			XTEA xtea = new XTEA(key);
 
 			await requestStream.MoveNext();
-			var lastChunk = requestStream.Current.Chunk.Bytes; // buffer last message for padding
+			var lastChunk = requestStream.Current.Chunk; // buffer last message for padding
 
 			byte[] encryptedChunk;
 			await foreach (var request in requestStream.ReadAllAsync())
 			{
 				var currChunk = lastChunk;
 
-				encryptedChunk = xtea.Encrypt(currChunk.ToByteArray());
+				encryptedChunk = xtea.Encrypt(currChunk.Bytes.ToByteArray());
 
 				await responseStream.WriteAsync(new Chunk()
 				{ 
 					Bytes = ByteString.CopyFrom(encryptedChunk)
 				});
 
-				lastChunk = request.Chunk.Bytes;
+				lastChunk = request.Chunk;
 			}
 
 			// if last chunk is full create new chunk with just the padding
-			if (lastChunk.Length == ChunkSize)
+			if (lastChunk.Bytes.Length == ChunkSize)
 			{
-				encryptedChunk = xtea.Encrypt(lastChunk.ToByteArray());
+				encryptedChunk = xtea.Encrypt(lastChunk.Bytes.ToByteArray());
 				await responseStream.WriteAsync(new Chunk()
 				{
 					Bytes = ByteString.CopyFrom(encryptedChunk)
 				});
 
-				encryptedChunk = xtea.Encrypt(new byte[0], true); // just padding
+				encryptedChunk = xtea.Encrypt(new byte[0], true); // 64 bits of padding
 			} 
 			else
 			{
-				encryptedChunk = xtea.Encrypt(lastChunk.ToByteArray(), true);
+				encryptedChunk = xtea.Encrypt(lastChunk.Bytes.ToByteArray(), true);
 			}
 
 			await responseStream.WriteAsync(new Chunk()
@@ -123,29 +122,28 @@ namespace Crypto.Server.Services
 		{
 			await requestStream.MoveNext();
 
-			var key = requestStream.Current.Key.ToByteArray();
-
+			var key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
 			XTEA xtea = new XTEA(key);
 
 			await requestStream.MoveNext();
-			var lastChunk = requestStream.Current.Chunk.Bytes; // buffer last message to remove padding
+			var lastChunk = requestStream.Current.Chunk; // buffer last message to remove padding
 
 			byte[] decryptedChunk;
 			await foreach (var request in requestStream.ReadAllAsync())
 			{
 				var currChunk = lastChunk;
 
-				decryptedChunk = xtea.Decrypt(currChunk.ToByteArray());
+				decryptedChunk = xtea.Decrypt(currChunk.Bytes.ToByteArray());
 
 				await responseStream.WriteAsync(new Chunk()
 				{
 					Bytes = ByteString.CopyFrom(decryptedChunk)
 				});
 
-				lastChunk = request.Chunk.Bytes;
+				lastChunk = request.Chunk;
 			}
 
-			decryptedChunk = xtea.Decrypt(lastChunk.ToByteArray(), true);
+			decryptedChunk = xtea.Decrypt(lastChunk.Bytes.ToByteArray(), true);
 			await responseStream.WriteAsync(new Chunk()
 			{
 				Bytes = ByteString.CopyFrom(decryptedChunk)

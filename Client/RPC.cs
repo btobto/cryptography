@@ -43,8 +43,7 @@ namespace Client
 				{
 					Chunk = new Chunk()
 					{
-						Bytes = ByteString.CopyFrom(chunk),
-						Size = size
+						Bytes = ByteString.CopyFrom(chunk, 0, size)
 					}
 				};
 				await call.RequestStream.WriteAsync(newRequest);
@@ -102,14 +101,47 @@ namespace Client
 			await CryptRailFence(client.DecryptRailFence(), inFilePath, outFilePath, rails);
 		}
 
-		public static async Task EncryptXTEA(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, byte[] key)
+		public static async Task CryptXTEA(
+			AsyncDuplexStreamingCall<XTEARequest, Chunk> call, 
+			string inFilePath, string outFilePath,
+			string key)
 		{
-			
+			using FileStream outFileStream = new FileStream(outFilePath, FileMode.Create);
+
+			var request = new XTEARequest() { Key = key };
+			await call.RequestStream.WriteAsync(request);
+
+			var responseTask = Task.Run(async () =>
+			{
+				await foreach (var response in call.ResponseStream.ReadAllAsync())
+				{
+					outFileStream.Write(response.Bytes.Span);
+				}
+			});
+
+			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			{
+				request = new XTEARequest()
+				{
+					Chunk = new Chunk() { 
+						Bytes = ByteString.CopyFrom(chunk, 0, size)
+					}
+				};
+				await call.RequestStream.WriteAsync(request);
+			}
+
+			await call.RequestStream.CompleteAsync();
+			await responseTask;
 		}
 
-		public static async Task DecryptXTEA(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, byte[] key)
+		public static async Task EncryptXTEA(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key)
 		{
+			await CryptXTEA(client.EncryptXTEA(), inFilePath, outFilePath, key);
+		}
 
+		public static async Task DecryptXTEA(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key)
+		{
+			await CryptXTEA(client.DecryptXTEA(), inFilePath, outFilePath, key);
 		}
 	}
 }
