@@ -101,5 +101,15 @@ namespace Client
 		{
 			await CryptRailFence(client.DecryptRailFence(), inFilePath, outFilePath, rails);
 		}
+
+		public static async Task EncryptXTEA(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, byte[] key)
+		{
+			
+		}
+
+		public static async Task DecryptXTEA(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, byte[] key)
+		{
+
+		}
 	}
 }

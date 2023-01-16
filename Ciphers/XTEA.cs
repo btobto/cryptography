@@ -75,7 +75,7 @@ namespace Ciphers
 
 			if (padding)
 			{
-				byte[] lastBlock = DecryptBlock(chunk[(numBlocks * 8 - 8)..]);
+				byte[] lastBlock = DecryptBlock(chunk[((numBlocks - 1) * 8)..]);
 				int numPads = lastBlock[lastBlock.Length - 1];
 				decryptedChunk.AddRange(lastBlock.Take(8 - numPads));
 			}

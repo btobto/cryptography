@@ -8,6 +8,9 @@ service Crypto {
 
 	rpc EncryptRailFence(stream RailFenceRequest) returns (stream RailFenceResponse);
 	rpc DecryptRailFence(stream RailFenceRequest) returns (stream RailFenceResponse);
+
+	rpc EncryptXTEA(stream XTEARequest) returns (stream Chunk);
+	rpc DecryptXTEA(stream XTEARequest) returns (stream Chunk);
 }
 
 message Chunk {
@@ -28,5 +31,10 @@ message RailFenceRequest {
 
 message RailFenceResponse {
 	string text = 1;
+}
+
+message XTEARequest {
+	bytes key = 1;
+	Chunk chunk = 2;
 }
 

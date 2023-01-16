@@ -70,5 +70,86 @@ namespace Crypto.Server.Services
 				});
 			}
 		}
+
+		public override async Task EncryptXTEA(IAsyncStreamReader<XTEARequest> requestStream, IServerStreamWriter<Chunk> responseStream, ServerCallContext context)
+		{
+			await requestStream.MoveNext();
+
+			var key = requestStream.Current.Key.ToByteArray();
+
+			XTEA xtea = new XTEA(key);
+
+			await requestStream.MoveNext();
+			var lastChunk = requestStream.Current.Chunk.Bytes; // buffer last message for padding
+
+			byte[] encryptedChunk;
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				var currChunk = lastChunk;
+
+				encryptedChunk = xtea.Encrypt(currChunk.ToByteArray());
+
+				await responseStream.WriteAsync(new Chunk()
+				{ 
+					Bytes = ByteString.CopyFrom(encryptedChunk)
+				});
+
+				lastChunk = request.Chunk.Bytes;
+			}
+
+			// if last chunk is full create new chunk with just the padding
+			if (lastChunk.Length == ChunkSize)
+			{
+				encryptedChunk = xtea.Encrypt(lastChunk.ToByteArray());
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(encryptedChunk)
+				});
+
+				encryptedChunk = xtea.Encrypt(new byte[0], true); // just padding
+			} 
+			else
+			{
+				encryptedChunk = xtea.Encrypt(lastChunk.ToByteArray(), true);
+			}
+
+			await responseStream.WriteAsync(new Chunk()
+			{
+				Bytes = ByteString.CopyFrom(encryptedChunk)
+			});
+		}
+
+		public override async Task DecryptXTEA(IAsyncStreamReader<XTEARequest> requestStream, IServerStreamWriter<Chunk> responseStream, ServerCallContext context)
+		{
+			await requestStream.MoveNext();
+
+			var key = requestStream.Current.Key.ToByteArray();
+
+			XTEA xtea = new XTEA(key);
+
+			await requestStream.MoveNext();
+			var lastChunk = requestStream.Current.Chunk.Bytes; // buffer last message to remove padding
+
+			byte[] decryptedChunk;
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				var currChunk = lastChunk;
+
+				decryptedChunk = xtea.Decrypt(currChunk.ToByteArray());
+
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(decryptedChunk)
+				});
+
+				lastChunk = request.Chunk.Bytes;
+			}
+
+			decryptedChunk = xtea.Decrypt(lastChunk.ToByteArray(), true);
+			await responseStream.WriteAsync(new Chunk()
+			{
+				Bytes = ByteString.CopyFrom(decryptedChunk)
+			});
+		}
 	}
 }
