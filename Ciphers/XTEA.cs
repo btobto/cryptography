@@ -87,7 +87,7 @@ namespace Ciphers
 		{
 			if (data.Length != 8)
 			{
-				throw new ArgumentException("Data must be 64bits long.");
+				throw new ArgumentException("Block must be 64 bits long.");
 			}
 
 			return (BitConverter.ToUInt32(data, 0), BitConverter.ToUInt32(data, 4));

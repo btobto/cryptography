@@ -29,6 +29,14 @@ namespace Client
 			};
 			await call.RequestStream.WriteAsync(request);
 
+			var responseTask = Task.Run(async () =>
+			{
+				await foreach (var response in call.ResponseStream.ReadAllAsync())
+				{
+					outFileStream.Write(response.Bytes.Span);
+				}
+			});
+
 			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
 			{
 				var newRequest = new A52Request()
@@ -40,12 +48,10 @@ namespace Client
 					}
 				};
 				await call.RequestStream.WriteAsync(newRequest);
-
-				await call.ResponseStream.MoveNext();
-				outFileStream.Write(call.ResponseStream.Current.Bytes.Span);
 			}
 
 			await call.RequestStream.CompleteAsync();
+			await responseTask;
 		}
 
 		public static async Task EncryptA52(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
@@ -64,6 +70,14 @@ namespace Client
 		{
 			using StreamWriter writer = new StreamWriter(outFilePath);
 
+			var responseTask = Task.Run(async () =>
+			{
+				await foreach (var response in call.ResponseStream.ReadAllAsync())
+				{
+					writer.WriteLine(response.Text);
+				}
+			});
+
 			await foreach (string line in Helper.ReadFileByLines(inFilePath))
 			{
 				var request = new RailFenceRequest()
@@ -72,13 +86,10 @@ namespace Client
 					Rails = rails
 				};
 				await call.RequestStream.WriteAsync(request);
-
-				var response = call.ResponseStream;
-				await response.MoveNext();
-				writer.WriteLine(response.Current.Text);
 			}
 
 			await call.RequestStream.CompleteAsync();
+			await responseTask;
 		}
 
 		public static async Task EncryptRailFence(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, int rails)
