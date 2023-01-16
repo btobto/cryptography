@@ -85,7 +85,7 @@ namespace Ciphers
 
 		public byte[] EncryptBlock(byte[] data)
 		{
-			var v = ToUInt32Array(data);
+			var v = ByteArrayToUInt32Array(data);
 			var v0 = v[0];
 			var v1 = v[1];
 
@@ -98,12 +98,12 @@ namespace Ciphers
 				v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + _key[(sum >> 11) & 3]);
 			}
 
-			return ToByteArray(v0, v1);
+			return UInt32ArrayToByteArray(v0, v1);
 		}
 
 		public byte[] DecryptBlock(byte[] data)
 		{
-			var v = ToUInt32Array(data);
+			var v = ByteArrayToUInt32Array(data);
 			var v0 = v[0];
 			var v1 = v[1];
 
@@ -116,47 +116,38 @@ namespace Ciphers
 				v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + _key[sum & 3]);
 			}
 
-			return ToByteArray(v0, v1); ;
+			return UInt32ArrayToByteArray(v0, v1); ;
 		}
 
-		public static (uint, uint) ByteArrayToUInts(byte[] data)
+		public static byte[] UInt32ArrayToByteArray(params uint[] uints)
 		{
-			if (data.Length != 8)
+			byte[] bytes = new byte[uints.Length * sizeof(uint)];
+
+			for (int i = 0; i < uints.Length; i++)
 			{
-				throw new ArgumentException("Block must be 64 bits long.");
+				byte[] uintBytes = BitConverter.GetBytes(uints[i]);
+				if (BitConverter.IsLittleEndian) Array.Reverse(uintBytes);
+
+				Buffer.BlockCopy(uintBytes, 0, bytes, i * sizeof(uint), sizeof(uint));
 			}
 
-			return (BitConverter.ToUInt32(data, 0), BitConverter.ToUInt32(data, 4));
+			return bytes;
 		}
 
-		public static byte[] UIntsToByteArray(uint v0, uint v1)
+		public static uint[] ByteArrayToUInt32Array(byte[] bytes)
 		{
-			byte[] output = new byte[8];
+			uint[] uints = new uint[bytes.Length / sizeof(uint)];
 
-			Buffer.BlockCopy(BitConverter.GetBytes(v0), 0, output, 0, 4);
-			Buffer.BlockCopy(BitConverter.GetBytes(v1), 0, output, 4, 4);
+			for (int i = 0; i < uints.Length; i++)
+			{
+				byte[] uintBytes = new byte[sizeof(uint)];
+				Buffer.BlockCopy(bytes, i * sizeof(uint), uintBytes, 0, sizeof(uint));
+				if (BitConverter.IsLittleEndian) Array.Reverse(uintBytes);
 
-			return output;
+				uints[i] = BitConverter.ToUInt32(uintBytes, 0);
+			}
+
+			return uints;
 		}
-
-		public static byte[] ToByteArray(params uint[] data)
-		{
-			byte[] byteArray = new byte[data.Length * sizeof(uint)];
-
-			Buffer.BlockCopy(data, 0, byteArray, 0, data.Length * sizeof(uint));
-
-			return byteArray;
-		}
-
-		public static uint[] ToUInt32Array(byte[] data)
-		{
-			uint[] uintArray = new uint[(int)Math.Ceiling((double)data.Length / sizeof(uint))];
-
-			Buffer.BlockCopy(data, 0, uintArray, 0, data.Length);
-
-			return uintArray;
-		}
-
-
 	}
 }
