@@ -44,6 +44,14 @@ await RPC.DecryptXTEA(client, "ng_en", "nh_de.jpg", "1254512389401236");
 await RPC.EncryptXTEA(client, "test", "test_en", "1254512389401236");
 await RPC.DecryptXTEA(client, "test_en", "test_de", "1254512389401236");
 
+await RPC.EncryptXTEAPCBC(client, "railfence_original.txt", "pcbc_lotr_en.txt", "1254512389401236", "23471322");
+await RPC.DecryptXTEAPCBC(client, "pcbc_lotr_en.txt", "pcbc_lotr_de.txt", "1254512389401236", "23471322");
+
+await RPC.EncryptXTEAPCBC(client, "nighthawks.jpg", "pcbc_ng_en", "1254512389401236", "23471322");
+await RPC.DecryptXTEAPCBC(client, "pcbc_ng_en", "pcbc_nh_de.jpg", "1254512389401236", "23471322");
+
+await RPC.EncryptXTEAPCBC(client, "test", "pcbc_test_en", "1254512389401236", "23471322");
+await RPC.DecryptXTEAPCBC(client, "pcbc_test_en", "pcbc_test_de", "1254512389401236", "23471322");
 
 
 Console.WriteLine("Press any key to exit...");

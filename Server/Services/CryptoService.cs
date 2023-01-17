@@ -149,5 +149,85 @@ namespace Crypto.Server.Services
 				Bytes = ByteString.CopyFrom(decryptedChunk)
 			});
 		}
+
+		public override async Task EncryptXTEAPCBC(IAsyncStreamReader<XTEAPCBCRequest> requestStream, IServerStreamWriter<Chunk> responseStream, ServerCallContext context)
+		{
+			await requestStream.MoveNext();
+
+			var key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+			var iv = Encoding.ASCII.GetBytes(requestStream.Current.Iv);
+			PCBC pcbc = new PCBC(new XTEA(key), iv);
+
+			await requestStream.MoveNext();
+			var lastChunk = requestStream.Current.Chunk;
+
+			byte[] encryptedChunk;
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				var currChunk = lastChunk;
+
+				encryptedChunk = pcbc.Encrypt(currChunk.Bytes.ToByteArray());
+
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(encryptedChunk)
+				});
+
+				lastChunk = request.Chunk;
+			}
+
+			if (lastChunk.Bytes.Length == ChunkSize)
+			{
+				encryptedChunk = pcbc.Encrypt(lastChunk.Bytes.ToByteArray());
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(encryptedChunk)
+				});
+
+				encryptedChunk = pcbc.Encrypt(new byte[0], true);
+			}
+			else
+			{
+				encryptedChunk = pcbc.Encrypt(lastChunk.Bytes.ToByteArray(), true);
+			}
+
+			await responseStream.WriteAsync(new Chunk()
+			{
+				Bytes = ByteString.CopyFrom(encryptedChunk)
+			});
+		}
+
+		public override async Task DecryptXTEAPCBC(IAsyncStreamReader<XTEAPCBCRequest> requestStream, IServerStreamWriter<Chunk> responseStream, ServerCallContext context)
+		{
+			await requestStream.MoveNext();
+
+			var key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+			var iv = Encoding.ASCII.GetBytes(requestStream.Current.Iv);
+			PCBC pcbc = new PCBC(new XTEA(key), iv);
+
+			await requestStream.MoveNext();
+			var lastChunk = requestStream.Current.Chunk;
+
+			byte[] decryptedChunk;
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				var currChunk = lastChunk;
+
+				decryptedChunk = pcbc.Decrypt(currChunk.Bytes.ToByteArray());
+
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(decryptedChunk)
+				});
+
+				lastChunk = request.Chunk;
+			}
+
+			decryptedChunk = pcbc.Decrypt(lastChunk.Bytes.ToByteArray(), true);
+			await responseStream.WriteAsync(new Chunk()
+			{
+				Bytes = ByteString.CopyFrom(decryptedChunk)
+			});
+		}
 	}
 }

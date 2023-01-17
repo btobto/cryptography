@@ -12,6 +12,10 @@ namespace Ciphers
 		private const uint _delta = 0x9E3779B9;
 		private int _numRounds;
 
+		public int BlockSize { 
+			get => 8; 
+		}
+
 		public XTEA(byte[] key, int numRounds = 64)
 		{
 			if (key.Length != 16)
@@ -30,20 +34,20 @@ namespace Ciphers
 
 		public byte[] Encrypt(byte[] chunk, bool padding = false)
 		{
-			int numBlocks = chunk.Length / 8;
-			int lastBlockLength = chunk.Length - numBlocks * 8;
+			int numBlocks = chunk.Length / BlockSize;
+			int lastBlockLength = chunk.Length - numBlocks * BlockSize;
 
-			var encryptedChunk = new List<byte>(padding ? (numBlocks + 1) * 8 : numBlocks * 8);
+			var encryptedChunk = new List<byte>((padding ? numBlocks + 1 : numBlocks) * BlockSize);
 
-			for (int i = 0; i < numBlocks * 8; i += 8)
+			for (int i = 0; i < numBlocks * BlockSize; i += BlockSize)
 			{
-				byte[] encryptedBlock = EncryptBlock(chunk[i..(i + 8)]);
+				byte[] encryptedBlock = EncryptBlock(chunk[i..(i + BlockSize)]);
 				encryptedChunk.AddRange(encryptedBlock);
 			}
 
 			if (padding)
 			{
-				var paddedBlock = AddPKCS7Padding(chunk[^lastBlockLength..], 8);
+				var paddedBlock = AddPKCS7Padding(chunk[^lastBlockLength..], BlockSize);
 				var encryptedBlock = EncryptBlock(paddedBlock);
 				encryptedChunk.AddRange(encryptedBlock);
 			}
@@ -53,13 +57,13 @@ namespace Ciphers
 
 		public byte[] Decrypt(byte[] chunk, bool padding = false)
 		{
-			int numBlocks = chunk.Length / 8;
+			int numBlocks = chunk.Length / BlockSize;
 
 			List<byte> decryptedChunk = new List<byte>(chunk.Length);
 
-			for (int i = 0; i < (padding ? numBlocks - 1 : numBlocks) * 8; i += 8)
+			for (int i = 0; i < (padding ? numBlocks - 1 : numBlocks) * BlockSize; i += BlockSize)
 			{
-				byte[] decryptedBlock = DecryptBlock(chunk[i..(i + 8)]);
+				byte[] decryptedBlock = DecryptBlock(chunk[i..(i + BlockSize)]);
 				decryptedChunk.AddRange(decryptedBlock);
 			}
 

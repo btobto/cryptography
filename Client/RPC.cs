@@ -143,5 +143,50 @@ namespace Client
 		{
 			await CryptXTEA(client.DecryptXTEA(), inFilePath, outFilePath, key);
 		}
+
+		public static async Task CryptXTEAPCBC(
+			AsyncDuplexStreamingCall<XTEAPCBCRequest, Chunk> call,
+			string inFilePath, string outFilePath,
+			string key, string iv)
+		{
+			using FileStream outFileStream = new FileStream(outFilePath, FileMode.Create);
+
+			var request = new XTEAPCBCRequest() { Key = key, Iv = iv };
+			await call.RequestStream.WriteAsync(request);
+
+			var responseTask = Task.Run(async () =>
+			{
+				await foreach (var response in call.ResponseStream.ReadAllAsync())
+				{
+					outFileStream.Write(response.Bytes.Span);
+				}
+			});
+
+			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			{
+				request = new XTEAPCBCRequest()
+				{
+					Chunk = new Chunk()
+					{
+						Bytes = ByteString.CopyFrom(chunk, 0, size)
+					}
+				};
+				await call.RequestStream.WriteAsync(request);
+			}
+
+			await call.RequestStream.CompleteAsync();
+			await responseTask;
+		}
+
+		public static async Task EncryptXTEAPCBC(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
+		{
+			await CryptXTEAPCBC(client.EncryptXTEAPCBC(), inFilePath, outFilePath, key, iv);
+		}
+
+		public static async Task DecryptXTEAPCBC(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
+		{
+			await CryptXTEAPCBC(client.DecryptXTEAPCBC(), inFilePath, outFilePath, key, iv);
+		}
+
 	}
 }
