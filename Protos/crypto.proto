@@ -11,6 +11,9 @@ service Crypto {
 
 	rpc EncryptXTEA(stream XTEARequest) returns (stream Chunk);
 	rpc DecryptXTEA(stream XTEARequest) returns (stream Chunk);
+
+	rpc EncryptXTEAPCBC(stream XTEAPCBCRequest) return (stream Chunk);
+	rpc DecryptXTEAPCBC(stream XTEAPCBCRequest) return (stream Chunk);
 }
 
 message Chunk {
@@ -37,3 +40,8 @@ message XTEARequest {
 	Chunk chunk = 2;
 }
 
+message XTEAPCBCRequest {
+	string key = 1;
+	string iv = 2;
+	Chunk chunk = 3;
+}

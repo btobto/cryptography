@@ -41,15 +41,10 @@ namespace Ciphers
 				encryptedChunk.AddRange(encryptedBlock);
 			}
 
-			// PKCS 7 padding
 			if (padding)
 			{
-				int paddingLength = 8 - lastBlockLength;
-				var lastBlock = new List<byte>(chunk[^lastBlockLength..]);
-
-				lastBlock.AddRange(Enumerable.Range(0, paddingLength).Select(_ => (byte)paddingLength));
-
-				byte[] encryptedBlock = EncryptBlock(lastBlock.ToArray());
+				var paddedBlock = AddPKCS7Padding(chunk[^lastBlockLength..], 8);
+				var encryptedBlock = EncryptBlock(paddedBlock);
 				encryptedChunk.AddRange(encryptedBlock);
 			}
 
@@ -71,8 +66,8 @@ namespace Ciphers
 			if (padding)
 			{
 				byte[] lastBlock = DecryptBlock(chunk[^8..]);
-				int numPads = lastBlock[lastBlock.Length - 1];
-				decryptedChunk.AddRange(lastBlock.Take(8 - numPads));
+				var unpaddedBlock = RemovePKCS7Padding(lastBlock);
+				decryptedChunk.AddRange(unpaddedBlock);
 			}
 
 			return decryptedChunk.ToArray();
@@ -112,6 +107,30 @@ namespace Ciphers
 			}
 
 			return UInt32ArrayToByteArray(v0, v1); ;
+		}
+
+		public static byte[] AddPKCS7Padding(byte[] lastBlock, int blockSize)
+		{
+			if (blockSize < lastBlock.Length)
+			{
+				throw new ArgumentException("Cipher block size must be less than size of current block.");
+			}	
+
+			int paddingLength = blockSize - lastBlock.Length;
+
+			var paddedBlock = lastBlock
+				.Take(lastBlock.Length)
+				.Concat(Enumerable.Range(0, paddingLength).Select(_ => (byte)paddingLength))
+				.ToArray();
+			
+			return paddedBlock;
+		}
+
+		public static byte[] RemovePKCS7Padding(byte[] block)
+		{
+			int paddingLength = block[^1];
+
+			return block.Take(block.Length - paddingLength).ToArray();
 		}
 
 		public static byte[] UInt32ArrayToByteArray(params uint[] uints)
