@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Ciphers
 {
-	public class XTEA
+	public class XTEA : IBlockCipher
 	{
 		private uint[] _key;
 		private const uint _delta = 0x9E3779B9;
@@ -24,12 +24,7 @@ namespace Ciphers
 				throw new ArgumentException("Number of cycles must not be less that 32.");
 			}
 
-			_key = new uint[4];
-			for (int i = 0; i < 4; i++)
-			{
-				_key[i] = BitConverter.ToUInt32(key, i * 4);
-			}
-
+			_key = ByteArrayToUInt32Array(key);
 			_numRounds = numRounds;
 		}
 
@@ -50,7 +45,7 @@ namespace Ciphers
 			if (padding)
 			{
 				int paddingLength = 8 - lastBlockLength;
-				var lastBlock = new List<byte>(chunk[(numBlocks * 8)..]);
+				var lastBlock = new List<byte>(chunk[^lastBlockLength..]);
 
 				lastBlock.AddRange(Enumerable.Range(0, paddingLength).Select(_ => (byte)paddingLength));
 
@@ -75,7 +70,7 @@ namespace Ciphers
 
 			if (padding)
 			{
-				byte[] lastBlock = DecryptBlock(chunk[((numBlocks - 1) * 8)..]);
+				byte[] lastBlock = DecryptBlock(chunk[^8..]);
 				int numPads = lastBlock[lastBlock.Length - 1];
 				decryptedChunk.AddRange(lastBlock.Take(8 - numPads));
 			}

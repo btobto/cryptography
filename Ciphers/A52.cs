@@ -19,7 +19,7 @@ namespace Ciphers
 
 			if (iv.Length != 22)
 			{
-				throw new ArgumentException("Count length must be 22.");
+				throw new ArgumentException("Initialization vector length must be 22.");
 			}
 
 			_R1 = new Register(19, new int[] { 13, 16, 17, 18 }, new int[] { 12, 14, 15 });
