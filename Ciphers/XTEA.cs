@@ -140,31 +140,14 @@ namespace Ciphers
 		public static byte[] UInt32ArrayToByteArray(params uint[] uints)
 		{
 			byte[] bytes = new byte[uints.Length * sizeof(uint)];
-
-			for (int i = 0; i < uints.Length; i++)
-			{
-				byte[] uintBytes = BitConverter.GetBytes(uints[i]);
-				if (BitConverter.IsLittleEndian) Array.Reverse(uintBytes);
-
-				Buffer.BlockCopy(uintBytes, 0, bytes, i * sizeof(uint), sizeof(uint));
-			}
-
+			Buffer.BlockCopy(uints, 0, bytes, 0, bytes.Length);
 			return bytes;
 		}
 
 		public static uint[] ByteArrayToUInt32Array(byte[] bytes)
 		{
 			uint[] uints = new uint[bytes.Length / sizeof(uint)];
-
-			for (int i = 0; i < uints.Length; i++)
-			{
-				byte[] uintBytes = new byte[sizeof(uint)];
-				Buffer.BlockCopy(bytes, i * sizeof(uint), uintBytes, 0, sizeof(uint));
-				if (BitConverter.IsLittleEndian) Array.Reverse(uintBytes);
-
-				uints[i] = BitConverter.ToUInt32(uintBytes, 0);
-			}
-
+			Buffer.BlockCopy(bytes, 0, uints, 0, uints.Length * sizeof(uint));
 			return uints;
 		}
 	}

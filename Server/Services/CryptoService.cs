@@ -229,5 +229,26 @@ namespace Crypto.Server.Services
 				Bytes = ByteString.CopyFrom(decryptedChunk)
 			});
 		}
+
+		public override async Task<MD5Response> ComputeMD5Hash(IAsyncStreamReader<Chunk> requestStream, ServerCallContext context)
+		{
+			MD5 md5 = new MD5();
+
+			await requestStream.MoveNext();
+			Chunk lastChunk = requestStream.Current;
+
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				Chunk currChunk = lastChunk;
+
+				md5.ProcessChunk(currChunk.Bytes.ToByteArray());
+
+				lastChunk = request;
+			}
+
+			md5.ProcessChunk(lastChunk.Bytes.ToByteArray(), true);
+
+			return new MD5Response() { Hash = md5.GetHash() };
+		}
 	}
 }

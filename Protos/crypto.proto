@@ -14,6 +14,8 @@ service Crypto {
 
 	rpc EncryptXTEAPCBC(stream XTEAPCBCRequest) returns (stream Chunk);
 	rpc DecryptXTEAPCBC(stream XTEAPCBCRequest) returns (stream Chunk);
+
+	rpc ComputeMD5Hash(stream Chunk) returns (MD5Response);
 }
 
 message Chunk {
@@ -44,4 +46,8 @@ message XTEAPCBCRequest {
 	string key = 1;
 	string iv = 2;
 	Chunk chunk = 3;
+}
+
+message MD5Response {
+	string hash = 1;
 }

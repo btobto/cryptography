@@ -188,5 +188,33 @@ namespace Client
 			await CryptXTEAPCBC(client.DecryptXTEAPCBC(), inFilePath, outFilePath, key, iv);
 		}
 
+		public static async Task<string> ComputeMD5Hash(Crypto.Crypto.CryptoClient client, string inFilePath)
+		{
+			var call = client.ComputeMD5Hash();
+
+			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			{
+				var request = new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(chunk, 0, size)
+				};
+				await call.RequestStream.WriteAsync(request);
+			}
+
+			await call.RequestStream.CompleteAsync();
+
+			MD5Response result = await call;
+			return result.Hash;
+		}
+
+		public static async Task EncryptBMPImage(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
+		{
+
+		}
+
+		public static async Task DecryptBMPImage(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
+		{
+
+		}
 	}
 }
