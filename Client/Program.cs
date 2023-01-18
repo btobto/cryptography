@@ -17,8 +17,8 @@ var client = new Crypto.Crypto.CryptoClient(channel);
 
 string filesDir = AppDomain.CurrentDomain.BaseDirectory;
 
-//string keyA52 = "1100111010100101111010011101100001110111000011101011100011111110";
-//string ivA52 = "0010110100100001001111";
+string keyA52 = "1100111010100101111010011101100001110111000011101011100011111110";
+string ivA52 = "0010110100100001001111";
 //await RPC.EncryptA52(
 //	client, 
 //	Path.Combine(filesDir, "a52_original.bin"),
@@ -61,7 +61,8 @@ string filesDir = AppDomain.CurrentDomain.BaseDirectory;
 //Console.WriteLine(await RPC.ComputeMD5Hash(client, "crypt-master.zip"));
 //Console.WriteLine(await RPC.ComputeMD5Hash(client, "crypt-master_de.zip"));
 
-
+//await RPC.EncryptBMPImage(client, "img.bmp", "img_e.bmp", keyA52, ivA52);
+//await RPC.DecryptBMPImage(client, "img_e.bmp", "img_de.bmp", keyA52, ivA52);
 
 Console.WriteLine("Press any key to exit...");
 Console.ReadKey();

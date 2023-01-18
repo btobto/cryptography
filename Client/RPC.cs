@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Crypto;
 using Grpc.Net.Client;
 
-
 namespace Client
 {
 	internal static class RPC
@@ -207,14 +206,58 @@ namespace Client
 			return result.Hash;
 		}
 
+		public static async Task CryptBMPImage(AsyncDuplexStreamingCall<A52Request, Chunk> call, string inFilePath, string outFilePath, string key, string iv)
+		{
+			using FileStream outFileStream = new FileStream(outFilePath, FileMode.Create);
+
+			var headerReader = Helper.ReadFileByChunks(inFilePath, 54).GetAsyncEnumerator();
+			await headerReader.MoveNextAsync();
+			byte[] header = headerReader.Current.Item1;
+			await headerReader.DisposeAsync();
+
+			outFileStream.Write(header);
+
+			var request = new A52Request()
+			{
+				Key = key,
+				Iv = iv
+			};
+			await call.RequestStream.WriteAsync(request);
+
+			var responseTask = Task.Run(async () =>
+			{
+				await foreach (var response in call.ResponseStream.ReadAllAsync())
+				{
+					outFileStream.Write(response.Bytes.Span);
+				}
+			});
+
+			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize, 54))
+			{
+				request = new A52Request()
+				{
+					Chunk = new Chunk()
+					{
+						Bytes = ByteString.CopyFrom(chunk, 0, size)
+					}
+				};
+				await call.RequestStream.WriteAsync(request);
+			}
+
+			await call.RequestStream.CompleteAsync();
+			await responseTask;
+
+		}
+
 		public static async Task EncryptBMPImage(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
 		{
-
+			await CryptBMPImage(client.EncryptA52(), inFilePath, outFilePath, key, iv);
 		}
 
 		public static async Task DecryptBMPImage(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, string iv)
 		{
-
+			await CryptBMPImage(client.DecryptA52(), inFilePath, outFilePath, key, iv);
 		}
 	}
 }
+
