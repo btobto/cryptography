@@ -79,18 +79,6 @@ namespace Ciphers
 			}
 		}
 
-		public uint[] GetWords(byte[] chunk, int i)
-		{
-			uint[] M = new uint[16];
-
-			for (int j = 0; j < 16; j++)
-			{
-				M[j] = BitConverter.ToUInt32(chunk, (i * 64) + (j * 4));
-			}
-
-			return M;
-		}
-
 		public void ProcessBlock(uint[] M)
 		{
 			uint A = buffer[0];

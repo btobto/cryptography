@@ -10,13 +10,28 @@
   <ItemGroup>
     <None Remove="a52_original.bin" />
     <None Remove="railfence_original.txt" />
+    <None Remove="Resources\binary.bin" />
+    <None Remove="Resources\img.bmp" />
+    <None Remove="Resources\nighthawks.jpg" />
+    <None Remove="Resources\rf.txt" />
+    <None Remove="Resources\test" />
+    <None Remove="Resources\test.bak" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="a52_original.bin">
+    <Content Include="Resources\binary.bin">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="railfence_original.txt">
+    <Content Include="Resources\img.bmp">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\nighthawks.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\rf.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\test">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

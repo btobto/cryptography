@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -72,6 +73,57 @@ namespace Ciphers
 				byte[] lastBlock = DecryptBlock(chunk[^8..]);
 				var unpaddedBlock = RemovePKCS7Padding(lastBlock);
 				decryptedChunk.AddRange(unpaddedBlock);
+			}
+
+			return decryptedChunk.ToArray();
+		}
+
+		public byte[] EncryptParallel(int numThreads, byte[] chunk, bool padding = false)
+		{
+			int numBlocks = chunk.Length / BlockSize;
+			int lastBlockLength = chunk.Length - numBlocks * BlockSize;
+
+			var encryptedBlocks = Enumerable.Repeat(new byte[0], numBlocks).ToList();
+
+			Parallel.For(0, numBlocks, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
+			{
+				int blockStart = i * BlockSize;
+				byte[] encryptedBlock = EncryptBlock(chunk[blockStart..(blockStart + BlockSize)]);
+				encryptedBlocks[i] = encryptedBlock;
+			});
+
+			var encyptedChunk = encryptedBlocks.SelectMany(b => b);
+
+			if (padding)
+			{
+				var paddedBlock = AddPKCS7Padding(chunk[^lastBlockLength..], BlockSize);
+				var encryptedBlock = EncryptBlock(paddedBlock);
+				encyptedChunk.Concat(encryptedBlock);
+			}
+
+			return encyptedChunk.ToArray();
+		}
+
+		public byte[] DecryptParallel(int numThreads, byte[] chunk, bool padding = false)
+		{
+			int numBlocks = chunk.Length / BlockSize;
+
+			var decryptedBlocks = Enumerable.Repeat(new byte[0], numBlocks).ToList();
+
+			Parallel.For(0, numBlocks, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
+			{
+				int blockStart = i * BlockSize;
+				byte[] decryptedBlock = DecryptBlock(chunk[blockStart..(blockStart + BlockSize)]);
+				decryptedBlocks[i] = decryptedBlock;
+			});
+
+			var decryptedChunk = decryptedBlocks.SelectMany(b => b);
+
+			if (padding)
+			{
+				byte[] lastBlock = DecryptBlock(chunk[^8..]);
+				var unpaddedBlock = RemovePKCS7Padding(lastBlock);
+				decryptedChunk.Concat(unpaddedBlock);
 			}
 
 			return decryptedChunk.ToArray();

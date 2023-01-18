@@ -258,6 +258,51 @@ namespace Client
 		{
 			await CryptBMPImage(client.DecryptA52(), inFilePath, outFilePath, key, iv);
 		}
+
+		public static async Task CryptXTEAParallel(
+			AsyncDuplexStreamingCall<XTEAParallelRequest, Chunk> call,
+			string inFilePath, string outFilePath,
+			string key, int numThreads)
+		{
+			using FileStream outFileStream = new FileStream(outFilePath, FileMode.Create);
+
+			var request = new XTEAParallelRequest() { Key = key, NumThreads = numThreads };
+			await call.RequestStream.WriteAsync(request);
+
+			var responseTask = Task.Run(async () =>
+			{
+				await foreach (var response in call.ResponseStream.ReadAllAsync())
+				{
+					outFileStream.Write(response.Bytes.Span);
+				}
+			});
+
+			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			{
+				request = new XTEAParallelRequest()
+				{
+					Chunk = new Chunk()
+					{
+						Bytes = ByteString.CopyFrom(chunk, 0, size)
+					}
+				};
+				await call.RequestStream.WriteAsync(request);
+			}
+
+			await call.RequestStream.CompleteAsync();
+			await responseTask;
+		}
+
+		public static async Task EncryptXTEAParallel(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, int numThreads)
+		{
+			await CryptXTEAParallel(client.EncryptXTEAParallel(), inFilePath, outFilePath, key, numThreads);
+		}
+
+		public static async Task DecryptXTEAParallel(Crypto.Crypto.CryptoClient client, string inFilePath, string outFilePath, string key, int numThreads)
+		{
+			await CryptXTEAParallel(client.DecryptXTEAParallel(), inFilePath, outFilePath, key, numThreads);
+		}
+
 	}
 }
 

@@ -15,6 +15,9 @@ service Crypto {
 	rpc EncryptXTEAPCBC(stream XTEAPCBCRequest) returns (stream Chunk);
 	rpc DecryptXTEAPCBC(stream XTEAPCBCRequest) returns (stream Chunk);
 
+	rpc EncryptXTEAParallel(stream XTEAParallelRequest) returns (stream Chunk);
+	rpc DecryptXTEAParallel(stream XTEAParallelRequest) returns (stream Chunk);
+
 	rpc ComputeMD5Hash(stream Chunk) returns (MD5Response);
 }
 
@@ -45,6 +48,12 @@ message XTEARequest {
 message XTEAPCBCRequest {
 	string key = 1;
 	string iv = 2;
+	Chunk chunk = 3;
+}
+
+message XTEAParallelRequest {
+	string key = 1;
+	int32 num_threads = 2;
 	Chunk chunk = 3;
 }
 

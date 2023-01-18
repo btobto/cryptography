@@ -250,5 +250,86 @@ namespace Crypto.Server.Services
 
 			return new MD5Response() { Hash = md5.GetHash() };
 		}
+
+		public override async Task EncryptXTEAParallel(IAsyncStreamReader<XTEAParallelRequest> requestStream, IServerStreamWriter<Chunk> responseStream, ServerCallContext context)
+		{
+			await requestStream.MoveNext();
+
+			var key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+			int numThreads = requestStream.Current.NumThreads;
+			XTEA xtea = new XTEA(key);
+
+			await requestStream.MoveNext();
+			var lastChunk = requestStream.Current.Chunk;
+
+			byte[] encryptedChunk;
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				var currChunk = lastChunk;
+
+				encryptedChunk = xtea.EncryptParallel(numThreads, currChunk.Bytes.ToByteArray());
+
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(encryptedChunk)
+				});
+
+				lastChunk = request.Chunk;
+			}
+
+			// if last chunk is full create new chunk with just the padding
+			if (lastChunk.Bytes.Length == ChunkSize)
+			{
+				encryptedChunk = xtea.EncryptParallel(numThreads, lastChunk.Bytes.ToByteArray());
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(encryptedChunk)
+				});
+
+				encryptedChunk = xtea.EncryptParallel(numThreads, new byte[0], true); // 64 bits of padding
+			}
+			else
+			{
+				encryptedChunk = xtea.EncryptParallel(numThreads, lastChunk.Bytes.ToByteArray(), true);
+			}
+
+			await responseStream.WriteAsync(new Chunk()
+			{
+				Bytes = ByteString.CopyFrom(encryptedChunk)
+			});
+		}
+
+		public override async Task DecryptXTEAParallel(IAsyncStreamReader<XTEAParallelRequest> requestStream, IServerStreamWriter<Chunk> responseStream, ServerCallContext context)
+		{
+			await requestStream.MoveNext();
+
+			var key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+			int numThreads = requestStream.Current.NumThreads;
+			XTEA xtea = new XTEA(key);
+
+			await requestStream.MoveNext();
+			var lastChunk = requestStream.Current.Chunk; // buffer last message to remove padding
+
+			byte[] decryptedChunk;
+			await foreach (var request in requestStream.ReadAllAsync())
+			{
+				var currChunk = lastChunk;
+
+				decryptedChunk = xtea.DecryptParallel(numThreads, currChunk.Bytes.ToByteArray());
+
+				await responseStream.WriteAsync(new Chunk()
+				{
+					Bytes = ByteString.CopyFrom(decryptedChunk)
+				});
+
+				lastChunk = request.Chunk;
+			}
+
+			decryptedChunk = xtea.DecryptParallel(numThreads, lastChunk.Bytes.ToByteArray(), true);
+			await responseStream.WriteAsync(new Chunk()
+			{
+				Bytes = ByteString.CopyFrom(decryptedChunk)
+			});
+		}
 	}
 }
