@@ -37,6 +37,11 @@ namespace Ciphers
 
 		public byte[] Encrypt(byte[] chunk, bool padding = false)
 		{
+			if (!padding && chunk.Length % _blockSize != 0)
+			{
+				throw new ArgumentException($"Chunk size must be a multiple of {_blockSize}B if chunk is not last.");
+			}
+
 			int numBlocks = chunk.Length / _blockSize;
 			int lastBlockLength = chunk.Length - numBlocks * _blockSize;
 
@@ -68,6 +73,11 @@ namespace Ciphers
 
 		public byte[] Decrypt(byte[] chunk, bool padding = false)
 		{
+			if (!padding && chunk.Length % _blockSize != 0)
+			{
+				throw new ArgumentException($"Chunk size must be a multiple of {_blockSize}B if chunk is not last.");
+			}
+
 			int numBlocks = chunk.Length / 8;
 
 			List<byte> decryptedChunk = new List<byte>(chunk.Length);

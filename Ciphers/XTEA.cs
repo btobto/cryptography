@@ -33,8 +33,13 @@ namespace Ciphers
 			_numRounds = numRounds;
 		}
 
-		public byte[] Encrypt(byte[] chunk, bool padding = false)
+		public byte[] EncryptChunk(byte[] chunk, bool padding = false)
 		{
+			if (!padding && chunk.Length % BlockSize != 0)
+			{
+				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
+			}
+
 			int numBlocks = chunk.Length / BlockSize;
 			int lastBlockLength = chunk.Length - numBlocks * BlockSize;
 
@@ -56,8 +61,13 @@ namespace Ciphers
 			return encryptedChunk.ToArray();
 		}
 
-		public byte[] Decrypt(byte[] chunk, bool padding = false)
+		public byte[] DecryptChunk(byte[] chunk, bool padding = false)
 		{
+			if (!padding && chunk.Length % BlockSize != 0)
+			{
+				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
+			}
+
 			int numBlocks = chunk.Length / BlockSize;
 
 			List<byte> decryptedChunk = new List<byte>(chunk.Length);
@@ -70,7 +80,7 @@ namespace Ciphers
 
 			if (padding)
 			{
-				byte[] lastBlock = DecryptBlock(chunk[^8..]);
+				byte[] lastBlock = DecryptBlock(chunk[^BlockSize..]);
 				var unpaddedBlock = RemovePKCS7Padding(lastBlock);
 				decryptedChunk.AddRange(unpaddedBlock);
 			}
@@ -80,6 +90,11 @@ namespace Ciphers
 
 		public byte[] EncryptParallel(int numThreads, byte[] chunk, bool padding = false)
 		{
+			if (!padding && chunk.Length % BlockSize != 0)
+			{
+				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
+			}
+
 			int numBlocks = chunk.Length / BlockSize;
 			int lastBlockLength = chunk.Length - numBlocks * BlockSize;
 
@@ -106,6 +121,11 @@ namespace Ciphers
 
 		public byte[] DecryptParallel(int numThreads, byte[] chunk, bool padding = false)
 		{
+			if (!padding && chunk.Length % BlockSize != 0)
+			{
+				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
+			}
+
 			int numBlocks = chunk.Length / BlockSize;
 
 			var decryptedBlocks = Enumerable.Repeat(new byte[0], numBlocks).ToList();
@@ -121,7 +141,7 @@ namespace Ciphers
 
 			if (padding)
 			{
-				byte[] lastBlock = DecryptBlock(chunk[^8..]);
+				byte[] lastBlock = DecryptBlock(chunk[^BlockSize..]);
 				var unpaddedBlock = RemovePKCS7Padding(lastBlock);
 				decryptedChunk.Concat(unpaddedBlock);
 			}
@@ -176,7 +196,7 @@ namespace Ciphers
 
 			var paddedBlock = lastBlock
 				.Take(lastBlock.Length)
-				.Concat(Enumerable.Range(0, paddingLength).Select(_ => (byte)paddingLength))
+				.Concat(Enumerable.Repeat((byte)paddingLength, paddingLength))
 				.ToArray();
 			
 			return paddedBlock;

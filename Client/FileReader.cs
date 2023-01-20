@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-	internal static class Helper
+	internal static class FileReader
 	{
 		public static async IAsyncEnumerable<(byte[], int)> ReadFileByChunks(string filePath, uint chunkSize, int seek = 0)
 		{

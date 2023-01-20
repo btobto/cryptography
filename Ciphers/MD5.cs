@@ -8,9 +8,9 @@ namespace Ciphers
 {
 	public class MD5
 	{
-		private long fileSize = 0;
+		private long _fileSize = 0;
 
-		private uint[] buffer = new uint[]
+		private uint[] _buffer = new uint[]
 		{
 			0x67452301,
 			0xefcdab89,
@@ -53,14 +53,19 @@ namespace Ciphers
 
 		public void ProcessChunk(byte[] chunk, bool padding = false)
 		{
-			fileSize += chunk.Length;
+			if (!padding && chunk.Length % 64 != 0)
+			{
+				throw new ArgumentException("Chunk size must be a multiple of 64B if chunk is not last.");
+			}
+
+			_fileSize += chunk.Length;
 
 			if (padding)
 			{
 				var paddedChunk = new List<byte>(chunk) { 0x80 };
 				while (paddedChunk.Count % 64 != 56) paddedChunk.Add(0x00);
 
-				byte[] lengthBytes = BitConverter.GetBytes(fileSize * 8);
+				byte[] lengthBytes = BitConverter.GetBytes(_fileSize * 8);
 				paddedChunk.AddRange(lengthBytes);
 
 				chunk = paddedChunk.ToArray();
@@ -81,10 +86,10 @@ namespace Ciphers
 
 		public void ProcessBlock(uint[] M)
 		{
-			uint A = buffer[0];
-			uint B = buffer[1];
-			uint C = buffer[2];
-			uint D = buffer[3];
+			uint A = _buffer[0];
+			uint B = _buffer[1];
+			uint C = _buffer[2];
+			uint D = _buffer[3];
 
 			uint E, j;
 
@@ -117,17 +122,17 @@ namespace Ciphers
 				A = tmp;
 			}
 
-			buffer[0] += A;
-			buffer[1] += B;
-			buffer[2] += C;
-			buffer[3] += D;
+			_buffer[0] += A;
+			_buffer[1] += B;
+			_buffer[2] += C;
+			_buffer[3] += D;
 		}
 
 		public string GetHash()
 		{
 			StringBuilder output = new StringBuilder();
 
-			foreach (var w in buffer)
+			foreach (var w in _buffer)
 			{
 				output.Append(string.Join("", BitConverter.GetBytes(w).Select(b => b.ToString("x2"))));
 			}

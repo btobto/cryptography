@@ -10,9 +10,9 @@ namespace Ciphers
 	{
 		public int BlockSize { get; } // in bytes
 
-		public byte[] Encrypt(byte[] chunk, bool padding = false);
+		public byte[] EncryptChunk(byte[] chunk, bool padding = false);
 
-		public byte[] Decrypt(byte[] chunk, bool padding = false);
+		public byte[] DecryptChunk(byte[] chunk, bool padding = false);
 
 		public byte[] EncryptBlock(byte[] data);
 

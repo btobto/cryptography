@@ -1,7 +1,6 @@
 ﻿using Ciphers;
 using Google.Protobuf;
 using Grpc.Core;
-using Server;
 using System.Collections;
 using System.Drawing;
 using System.Text;
@@ -19,8 +18,8 @@ namespace Crypto.Server.Services
 			string key = requestStream.Current.Key;
 			string iv = requestStream.Current.Iv;
 
-			BitArray keyBits = Helper.StringToBitArray(key);
-			BitArray ivBits = Helper.StringToBitArray(iv);
+			BitArray keyBits = new BitArray(key.Select(b => b == '1').Reverse().ToArray());
+			BitArray ivBits = new BitArray(iv.Select(b => b == '1').Reverse().ToArray());
 			A52 a52 = new A52(keyBits, ivBits);
 
 			await foreach (var request in requestStream.ReadAllAsync())
@@ -86,7 +85,7 @@ namespace Crypto.Server.Services
 			{
 				var currChunk = lastChunk;
 
-				encryptedChunk = xtea.Encrypt(currChunk.Bytes.ToByteArray());
+				encryptedChunk = xtea.EncryptChunk(currChunk.Bytes.ToByteArray());
 
 				await responseStream.WriteAsync(new Chunk()
 				{ 
@@ -99,17 +98,17 @@ namespace Crypto.Server.Services
 			// if last chunk is full create new chunk with just the padding
 			if (lastChunk.Bytes.Length == ChunkSize)
 			{
-				encryptedChunk = xtea.Encrypt(lastChunk.Bytes.ToByteArray());
+				encryptedChunk = xtea.EncryptChunk(lastChunk.Bytes.ToByteArray());
 				await responseStream.WriteAsync(new Chunk()
 				{
 					Bytes = ByteString.CopyFrom(encryptedChunk)
 				});
 
-				encryptedChunk = xtea.Encrypt(new byte[0], true); // 64 bits of padding
+				encryptedChunk = xtea.EncryptChunk(new byte[0], true); // 64 bits of padding
 			} 
 			else
 			{
-				encryptedChunk = xtea.Encrypt(lastChunk.Bytes.ToByteArray(), true);
+				encryptedChunk = xtea.EncryptChunk(lastChunk.Bytes.ToByteArray(), true);
 			}
 
 			await responseStream.WriteAsync(new Chunk()
@@ -133,7 +132,7 @@ namespace Crypto.Server.Services
 			{
 				var currChunk = lastChunk;
 
-				decryptedChunk = xtea.Decrypt(currChunk.Bytes.ToByteArray());
+				decryptedChunk = xtea.DecryptChunk(currChunk.Bytes.ToByteArray());
 
 				await responseStream.WriteAsync(new Chunk()
 				{
@@ -143,7 +142,7 @@ namespace Crypto.Server.Services
 				lastChunk = request.Chunk;
 			}
 
-			decryptedChunk = xtea.Decrypt(lastChunk.Bytes.ToByteArray(), true);
+			decryptedChunk = xtea.DecryptChunk(lastChunk.Bytes.ToByteArray(), true);
 			await responseStream.WriteAsync(new Chunk()
 			{
 				Bytes = ByteString.CopyFrom(decryptedChunk)

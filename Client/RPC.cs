@@ -36,7 +36,7 @@ namespace Client
 				}
 			});
 
-			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			await foreach (var (chunk, size) in FileReader.ReadFileByChunks(inFilePath, ChunkSize))
 			{
 				var newRequest = new A52Request()
 				{
@@ -76,7 +76,7 @@ namespace Client
 				}
 			});
 
-			await foreach (string line in Helper.ReadFileByLines(inFilePath))
+			await foreach (string line in FileReader.ReadFileByLines(inFilePath))
 			{
 				var request = new RailFenceRequest()
 				{
@@ -118,7 +118,7 @@ namespace Client
 				}
 			});
 
-			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			await foreach (var (chunk, size) in FileReader.ReadFileByChunks(inFilePath, ChunkSize))
 			{
 				request = new XTEARequest()
 				{
@@ -161,7 +161,7 @@ namespace Client
 				}
 			});
 
-			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			await foreach (var (chunk, size) in FileReader.ReadFileByChunks(inFilePath, ChunkSize))
 			{
 				request = new XTEAPCBCRequest()
 				{
@@ -191,7 +191,7 @@ namespace Client
 		{
 			var call = client.ComputeMD5Hash();
 
-			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			await foreach (var (chunk, size) in FileReader.ReadFileByChunks(inFilePath, ChunkSize))
 			{
 				var request = new Chunk()
 				{
@@ -210,7 +210,7 @@ namespace Client
 		{
 			using FileStream outFileStream = new FileStream(outFilePath, FileMode.Create);
 
-			var headerReader = Helper.ReadFileByChunks(inFilePath, 54).GetAsyncEnumerator();
+			var headerReader = FileReader.ReadFileByChunks(inFilePath, 54).GetAsyncEnumerator();
 			await headerReader.MoveNextAsync();
 			byte[] header = headerReader.Current.Item1;
 			await headerReader.DisposeAsync();
@@ -232,7 +232,7 @@ namespace Client
 				}
 			});
 
-			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize, 54))
+			await foreach (var (chunk, size) in FileReader.ReadFileByChunks(inFilePath, ChunkSize, 54))
 			{
 				request = new A52Request()
 				{
@@ -277,7 +277,7 @@ namespace Client
 				}
 			});
 
-			await foreach (var (chunk, size) in Helper.ReadFileByChunks(inFilePath, ChunkSize))
+			await foreach (var (chunk, size) in FileReader.ReadFileByChunks(inFilePath, ChunkSize))
 			{
 				request = new XTEAParallelRequest()
 				{
@@ -302,7 +302,6 @@ namespace Client
 		{
 			await CryptXTEAParallel(client.DecryptXTEAParallel(), inFilePath, outFilePath, key, numThreads);
 		}
-
 	}
 }
 
