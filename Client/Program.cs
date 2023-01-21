@@ -12,6 +12,11 @@ using System.Text;
 using var channel = GrpcChannel.ForAddress("https://localhost:7186");
 var client = new Crypto.Crypto.CryptoClient(channel);
 
+string filesDir = AppDomain.CurrentDomain.BaseDirectory;
+Console.WriteLine("Files location:");
+Console.WriteLine(filesDir);
+Console.WriteLine();
+
 Console.WriteLine("A52");
 string keyA52 = "1100111010100101111010011101100001110111000011101011100011111110";
 string ivA52 = "0010110100100001001111";
