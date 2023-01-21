@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ciphers
+namespace Cryptography
 {
 	public class PCBC
 	{
@@ -35,9 +35,9 @@ namespace Ciphers
 			}
 		}
 
-		public byte[] Encrypt(byte[] chunk, bool padding = false)
+		public byte[] EncryptChunk(byte[] chunk, bool lastChunk = false)
 		{
-			if (!padding && chunk.Length % _blockSize != 0)
+			if (!lastChunk && chunk.Length % _blockSize != 0)
 			{
 				throw new ArgumentException($"Chunk size must be a multiple of {_blockSize}B if chunk is not last.");
 			}
@@ -45,7 +45,7 @@ namespace Ciphers
 			int numBlocks = chunk.Length / _blockSize;
 			int lastBlockLength = chunk.Length - numBlocks * _blockSize;
 
-			var encryptedChunk = new List<byte>((padding ? numBlocks + 1 : numBlocks) * _blockSize);
+			var encryptedChunk = new List<byte>((lastChunk ? numBlocks + 1 : numBlocks) * _blockSize);
 
 			for (int i = 0; i < numBlocks * _blockSize; i += _blockSize)
 			{
@@ -59,7 +59,7 @@ namespace Ciphers
 				XORWithBlock(currBlock);
 			}
 
-			if (padding)
+			if (lastChunk)
 			{
 				var paddedBlock = XTEA.AddPKCS7Padding(chunk[^lastBlockLength..], _blockSize);
 				XORWithBlock(paddedBlock);
@@ -71,9 +71,9 @@ namespace Ciphers
 			return encryptedChunk.ToArray();
 		}
 
-		public byte[] Decrypt(byte[] chunk, bool padding = false)
+		public byte[] DecryptChunk(byte[] chunk, bool lastChunk = false)
 		{
-			if (!padding && chunk.Length % _blockSize != 0)
+			if (!lastChunk && chunk.Length % _blockSize != 0)
 			{
 				throw new ArgumentException($"Chunk size must be a multiple of {_blockSize}B if chunk is not last.");
 			}
@@ -82,7 +82,7 @@ namespace Ciphers
 
 			List<byte> decryptedChunk = new List<byte>(chunk.Length);
 
-			for (int i = 0; i < (padding ? numBlocks - 1 : numBlocks) * 8; i += 8)
+			for (int i = 0; i < (lastChunk ? numBlocks - 1 : numBlocks) * 8; i += 8)
 			{
 				var currBlock = chunk[i..(i + 8)];
 				var decryptedBlock = _cipher.DecryptBlock(currBlock);
@@ -93,7 +93,7 @@ namespace Ciphers
 				XORWithBlock(currBlock);
 			}
 
-			if (padding)
+			if (lastChunk)
 			{
 				var decryptedBlock = _cipher.DecryptBlock(chunk[^8..]);
 				XORWithBlock(decryptedBlock);

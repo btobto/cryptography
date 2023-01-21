@@ -12,52 +12,59 @@ using System.Text;
 using var channel = GrpcChannel.ForAddress("https://localhost:7186");
 var client = new Crypto.Crypto.CryptoClient(channel);
 
-string filesDir = AppDomain.CurrentDomain.BaseDirectory;
-
 Console.WriteLine("A52");
 string keyA52 = "1100111010100101111010011101100001110111000011101011100011111110";
 string ivA52 = "0010110100100001001111";
-await RPC.EncryptA52(client, "Resources\\binary.bin", "bynary_e.bin", keyA52, ivA52);
-await RPC.DecryptA52(client, "bynary_e.bin", "bynary_d.bin", keyA52, ivA52);
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "Resources\\binary.bin"));
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "bynary_d.bin"));
-Console.WriteLine();
+string original1 = "Resources\\binary.bin", encrypted1 = "bynary_encrypted.bin", decrypted1 = "bynary_decrypted.bin";
+await RPC.EncryptA52(client, original1, encrypted1, keyA52, ivA52);
+await RPC.DecryptA52(client, encrypted1, decrypted1, keyA52, ivA52);
+await CompareMD5Hashes(client, original1, decrypted1);
 
 Console.WriteLine("RailFence");
-await RPC.EncryptRailFence(client, "Resources\\rf.txt", "rf_e.txt", 3);
-await RPC.DecryptRailFence(client, "rf_e.txt", "rf_d.txt", 3);
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "Resources\\rf.txt"));
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "rf_d.txt"));
-Console.WriteLine();
+string original2 = "Resources\\rf.txt", encrypted2 = "rf_encrypted.txt", decrypted2 = "rf_decrypted.txt";
+await RPC.EncryptRailFence(client, original2, encrypted2, 3);
+await RPC.DecryptRailFence(client, encrypted2, decrypted2, 3);
+await CompareMD5Hashes(client, original2, decrypted2);
 
 Console.WriteLine("XTEA");
-await RPC.EncryptXTEA(client, "Resources\\nighthawks.jpg", "nighthawks_e", "1254512389401236");
-await RPC.DecryptXTEA(client, "nighthawks_e", "nighthawks_d.jpg", "1254512389401236");
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "Resources\\nighthawks.jpg"));
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "nighthawks_d.jpg"));
-Console.WriteLine();
+string original3 = "Resources\\nighthawks.jpg", encrypted3 = "nh_encrypted", decrypted3 = "nh_decrypted.jpg";
+await RPC.EncryptXTEA(client, original3, encrypted3, "1254512389401236");
+await RPC.DecryptXTEA(client, encrypted3, decrypted3, "1254512389401236");
+await CompareMD5Hashes(client, original3, decrypted3);
 
 Console.WriteLine("XTEA With PCBC");
-await RPC.EncryptXTEAPCBC(client, "Resources\\test", "test_e", "1254512389401236", "23471322");
-await RPC.DecryptXTEAPCBC(client, "test_e", "test_d", "1254512389401236", "23471322");
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "Resources\\test"));
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "test_d"));
-Console.WriteLine();
+string original4 = "Resources\\test", encrypted4 = "test_encrypted", decrypted4 = "test_decrypted";
+await RPC.EncryptXTEAPCBC(client, original4, encrypted4, "1254512389401236", "23471322");
+await RPC.DecryptXTEAPCBC(client, encrypted4, decrypted4, "1254512389401236", "23471322");
+await CompareMD5Hashes(client, original4, decrypted4);
 
 Console.WriteLine("BMP image with XTEA");
-await RPC.EncryptBMPImage(client, "Resources\\img.bmp", "img_e.bmp", keyA52, ivA52);
-await RPC.DecryptBMPImage(client, "img_e.bmp", "img_d.bmp", keyA52, ivA52);
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "Resources\\img.bmp"));
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "img_d.bmp"));
-Console.WriteLine();
+string original5 = "Resources\\img.bmp", encrypted5 = "img_encrypted.bmp", decrypted5 = "img_decrypted.bmp.jpg";
+await RPC.EncryptBMPImage(client, original5, encrypted5, keyA52, ivA52);
+await RPC.DecryptBMPImage(client, encrypted5, decrypted5, keyA52, ivA52);
+await CompareMD5Hashes(client, original5, decrypted5);
 
 Console.WriteLine("XTEA Parallel");
-await RPC.EncryptXTEAParallel(client, "Resources\\nighthawks.jpg", "nighthawks_p_e", "1254512389401236", 4);
-await RPC.DecryptXTEAParallel(client, "nighthawks_p_e", "nighthawks_p_d.jpg", "1254512389401236", 4);
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "Resources\\nighthawks.jpg"));
-Console.WriteLine(await RPC.ComputeMD5Hash(client, "nighthawks_p_d.jpg"));
-Console.WriteLine();
+string original6 = "Resources\\nighthawks.jpg", encrypted6 = "nh_p_encrypted", decrypted6 = "nh_p_decrypted.jpg";
+await RPC.EncryptXTEAParallel(client, original6, encrypted6, "1254512389401236", 4);
+await RPC.DecryptXTEAParallel(client, encrypted6, decrypted6, "1254512389401236", 4);
+await CompareMD5Hashes(client, original6, decrypted6);
 
 Console.WriteLine("Press any key to exit...");
 Console.ReadKey();
 
+async Task CompareMD5Hashes(Crypto.Crypto.CryptoClient client, string file1, string file2)
+{
+	string hash1 = await RPC.ComputeMD5Hash(client, file1);
+	string hash2 = await RPC.ComputeMD5Hash(client, file2);
+
+	Console.WriteLine($"FILE: {file1}:");
+	Console.WriteLine(hash1);
+	Console.WriteLine($"FILE: {file2}:");
+	Console.WriteLine(hash2);
+
+	if (hash1 == hash2) Console.WriteLine("Hashes match.");
+	else Console.WriteLine("Hashes DON'T match.");
+
+	Console.WriteLine();
+}

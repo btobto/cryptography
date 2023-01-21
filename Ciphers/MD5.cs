@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ciphers
+namespace Cryptography
 {
 	public class MD5
 	{
@@ -51,16 +51,16 @@ namespace Ciphers
 			return (x << n) | (x >> (32 - n));
 		}
 
-		public void ProcessChunk(byte[] chunk, bool padding = false)
+		public void ProcessChunk(byte[] chunk, bool lastChunk = false)
 		{
-			if (!padding && chunk.Length % 64 != 0)
+			if (!lastChunk && chunk.Length % 64 != 0)
 			{
 				throw new ArgumentException("Chunk size must be a multiple of 64B if chunk is not last.");
 			}
 
 			_fileSize += chunk.Length;
 
-			if (padding)
+			if (lastChunk)
 			{
 				var paddedChunk = new List<byte>(chunk) { 0x80 };
 				while (paddedChunk.Count % 64 != 56) paddedChunk.Add(0x00);

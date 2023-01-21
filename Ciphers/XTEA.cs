@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ciphers
+namespace Cryptography
 {
 	public class XTEA : IBlockCipher
 	{
@@ -33,9 +33,9 @@ namespace Ciphers
 			_numRounds = numRounds;
 		}
 
-		public byte[] EncryptChunk(byte[] chunk, bool padding = false)
+		public byte[] EncryptChunk(byte[] chunk, bool lastChunk = false)
 		{
-			if (!padding && chunk.Length % BlockSize != 0)
+			if (!lastChunk && chunk.Length % BlockSize != 0)
 			{
 				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
 			}
@@ -43,7 +43,7 @@ namespace Ciphers
 			int numBlocks = chunk.Length / BlockSize;
 			int lastBlockLength = chunk.Length - numBlocks * BlockSize;
 
-			var encryptedChunk = new List<byte>((padding ? numBlocks + 1 : numBlocks) * BlockSize);
+			var encryptedChunk = new List<byte>((lastChunk ? numBlocks + 1 : numBlocks) * BlockSize);
 
 			for (int i = 0; i < numBlocks * BlockSize; i += BlockSize)
 			{
@@ -51,7 +51,7 @@ namespace Ciphers
 				encryptedChunk.AddRange(encryptedBlock);
 			}
 
-			if (padding)
+			if (lastChunk)
 			{
 				var paddedBlock = AddPKCS7Padding(chunk[^lastBlockLength..], BlockSize);
 				var encryptedBlock = EncryptBlock(paddedBlock);
@@ -61,9 +61,9 @@ namespace Ciphers
 			return encryptedChunk.ToArray();
 		}
 
-		public byte[] DecryptChunk(byte[] chunk, bool padding = false)
+		public byte[] DecryptChunk(byte[] chunk, bool lastChunk = false)
 		{
-			if (!padding && chunk.Length % BlockSize != 0)
+			if (!lastChunk && chunk.Length % BlockSize != 0)
 			{
 				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
 			}
@@ -72,13 +72,13 @@ namespace Ciphers
 
 			List<byte> decryptedChunk = new List<byte>(chunk.Length);
 
-			for (int i = 0; i < (padding ? numBlocks - 1 : numBlocks) * BlockSize; i += BlockSize)
+			for (int i = 0; i < (lastChunk ? numBlocks - 1 : numBlocks) * BlockSize; i += BlockSize)
 			{
 				byte[] decryptedBlock = DecryptBlock(chunk[i..(i + BlockSize)]);
 				decryptedChunk.AddRange(decryptedBlock);
 			}
 
-			if (padding)
+			if (lastChunk)
 			{
 				byte[] lastBlock = DecryptBlock(chunk[^BlockSize..]);
 				var unpaddedBlock = RemovePKCS7Padding(lastBlock);
@@ -88,9 +88,9 @@ namespace Ciphers
 			return decryptedChunk.ToArray();
 		}
 
-		public byte[] EncryptParallel(int numThreads, byte[] chunk, bool padding = false)
+		public byte[] EncryptParallel(int numThreads, byte[] chunk, bool lastChunk = false)
 		{
-			if (!padding && chunk.Length % BlockSize != 0)
+			if (!lastChunk && chunk.Length % BlockSize != 0)
 			{
 				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
 			}
@@ -109,7 +109,7 @@ namespace Ciphers
 
 			var encyptedChunk = encryptedBlocks.SelectMany(b => b);
 
-			if (padding)
+			if (lastChunk)
 			{
 				var paddedBlock = AddPKCS7Padding(chunk[^lastBlockLength..], BlockSize);
 				var encryptedBlock = EncryptBlock(paddedBlock);
@@ -119,9 +119,9 @@ namespace Ciphers
 			return encyptedChunk.ToArray();
 		}
 
-		public byte[] DecryptParallel(int numThreads, byte[] chunk, bool padding = false)
+		public byte[] DecryptParallel(int numThreads, byte[] chunk, bool lastChunk = false)
 		{
-			if (!padding && chunk.Length % BlockSize != 0)
+			if (!lastChunk && chunk.Length % BlockSize != 0)
 			{
 				throw new ArgumentException($"Chunk size must be a multiple of {BlockSize}B if chunk is not last.");
 			}
@@ -139,7 +139,7 @@ namespace Ciphers
 
 			var decryptedChunk = decryptedBlocks.SelectMany(b => b);
 
-			if (padding)
+			if (lastChunk)
 			{
 				byte[] lastBlock = DecryptBlock(chunk[^BlockSize..]);
 				var unpaddedBlock = RemovePKCS7Padding(lastBlock);

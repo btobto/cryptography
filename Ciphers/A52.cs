@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace Ciphers
+namespace Cryptography
 {
 	public class A52
 	{

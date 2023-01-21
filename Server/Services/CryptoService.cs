@@ -1,4 +1,4 @@
-﻿using Ciphers;
+﻿using Cryptography;
 using Google.Protobuf;
 using Grpc.Core;
 using System.Collections;
@@ -78,7 +78,7 @@ namespace Crypto.Server.Services
 			XTEA xtea = new XTEA(key);
 
 			await requestStream.MoveNext();
-			var lastChunk = requestStream.Current.Chunk; // buffer last message for padding
+			var lastChunk = requestStream.Current.Chunk; // buffer last chunk for padding
 
 			byte[] encryptedChunk;
 			await foreach (var request in requestStream.ReadAllAsync())
@@ -125,7 +125,7 @@ namespace Crypto.Server.Services
 			XTEA xtea = new XTEA(key);
 
 			await requestStream.MoveNext();
-			var lastChunk = requestStream.Current.Chunk; // buffer last message to remove padding
+			var lastChunk = requestStream.Current.Chunk; // buffer last chunk to remove padding
 
 			byte[] decryptedChunk;
 			await foreach (var request in requestStream.ReadAllAsync())
@@ -165,7 +165,7 @@ namespace Crypto.Server.Services
 			{
 				var currChunk = lastChunk;
 
-				encryptedChunk = pcbc.Encrypt(currChunk.Bytes.ToByteArray());
+				encryptedChunk = pcbc.EncryptChunk(currChunk.Bytes.ToByteArray());
 
 				await responseStream.WriteAsync(new Chunk()
 				{
@@ -177,17 +177,17 @@ namespace Crypto.Server.Services
 
 			if (lastChunk.Bytes.Length == ChunkSize)
 			{
-				encryptedChunk = pcbc.Encrypt(lastChunk.Bytes.ToByteArray());
+				encryptedChunk = pcbc.EncryptChunk(lastChunk.Bytes.ToByteArray());
 				await responseStream.WriteAsync(new Chunk()
 				{
 					Bytes = ByteString.CopyFrom(encryptedChunk)
 				});
 
-				encryptedChunk = pcbc.Encrypt(new byte[0], true);
+				encryptedChunk = pcbc.EncryptChunk(new byte[0], true);
 			}
 			else
 			{
-				encryptedChunk = pcbc.Encrypt(lastChunk.Bytes.ToByteArray(), true);
+				encryptedChunk = pcbc.EncryptChunk(lastChunk.Bytes.ToByteArray(), true);
 			}
 
 			await responseStream.WriteAsync(new Chunk()
@@ -212,7 +212,7 @@ namespace Crypto.Server.Services
 			{
 				var currChunk = lastChunk;
 
-				decryptedChunk = pcbc.Decrypt(currChunk.Bytes.ToByteArray());
+				decryptedChunk = pcbc.DecryptChunk(currChunk.Bytes.ToByteArray());
 
 				await responseStream.WriteAsync(new Chunk()
 				{
@@ -222,7 +222,7 @@ namespace Crypto.Server.Services
 				lastChunk = request.Chunk;
 			}
 
-			decryptedChunk = pcbc.Decrypt(lastChunk.Bytes.ToByteArray(), true);
+			decryptedChunk = pcbc.DecryptChunk(lastChunk.Bytes.ToByteArray(), true);
 			await responseStream.WriteAsync(new Chunk()
 			{
 				Bytes = ByteString.CopyFrom(decryptedChunk)
@@ -307,7 +307,7 @@ namespace Crypto.Server.Services
 			XTEA xtea = new XTEA(key);
 
 			await requestStream.MoveNext();
-			var lastChunk = requestStream.Current.Chunk; // buffer last message to remove padding
+			var lastChunk = requestStream.Current.Chunk; // buffer last chunk to remove padding
 
 			byte[] decryptedChunk;
 			await foreach (var request in requestStream.ReadAllAsync())
